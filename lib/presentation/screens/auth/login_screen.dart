@@ -1,8 +1,15 @@
 import 'package:chat_app/core/common/custom_button.dart';
 import 'package:chat_app/core/common/custom_text_field.dart';
+import 'package:chat_app/data/services/service_locator.dart';
+import 'package:chat_app/logic/cubits/auth/auth_state.dart';
+import 'package:chat_app/presentation/home/home_screen.dart';
 import 'package:chat_app/presentation/screens/auth/signup_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:chat_app/router/app_router.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import '../../../core/utils/ui_utils.dart';
+import '../../../logic/cubits/auth/auth_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -53,118 +60,149 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
+  Future<void> handleSignIn() async {
+    FocusScope.of(context).unfocus();
+    if (_formKey.currentState?.validate() ?? false) {
+      try {
+        await getIt<AuthCubit>().signIn(
+          email: emailController.text,
+          password: passwordController.text,
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } else {
+      print("form validation failed");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 30),
+    return BlocConsumer<AuthCubit, AuthState>(
+      bloc: getIt<AuthCubit>(),
+      listener: (context, state) {
+        if (state.status == AuthStatus.authenticated) {
+          getIt<AppRouter>().pushAndRemoveUntil(HomeScreen());
+        } else if (state.status == AuthStatus.error && state.error != null) {
+          UiUtils.showSnackBar(context, message: state.error!);
+        }
+      },
+      builder: (context, state) {
+        return Scaffold(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 30),
 
-                  Text(
-                    "Welcome Back",
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Text(
-                    "Sign in to continue",
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: Colors.grey),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  CustomTextField(
-                    controller: emailController,
-                    hintText: "Your Email",
-                    focusNode: _emailFocus,
-                    validator: _validateEmail,
-                    prefixIcon: const Icon(Icons.email_outlined),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  CustomTextField(
-                    controller: passwordController,
-                    hintText: "Your Unique Password",
-                    focusNode: _passwordFocus,
-                    validator: _validatePassword,
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    obscureText: !_isPasswordVisible,
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                      Text(
+                        "Welcome Back",
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 30),
+                      const SizedBox(height: 10),
 
-                  /// Login Button
-                  CustomButton(
-                    onPressed: () {
-                      FocusScope.of(context).unfocus();
-                      if (_formKey.currentState?.validate() ?? false) {}
-                    },
-                    text: 'Login',
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// Sign up text
-                  Center(
-                    child: RichText(
-                      text: TextSpan(
-                        text: "Don't have an account? ",
+                      Text(
+                        "Sign in to continue",
                         style: Theme.of(
                           context,
                         ).textTheme.bodyLarge?.copyWith(color: Colors.grey),
-                        children: [
-                          TextSpan(
-                            text: "Sign up",
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  color: Theme.of(context).primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const SignupScreen(),
-                                  ),
-                                );
-                              },
-                          ),
-                        ],
                       ),
-                    ),
+
+                      const SizedBox(height: 30),
+
+                      CustomTextField(
+                        controller: emailController,
+                        hintText: "Your Email",
+                        focusNode: _emailFocus,
+                        validator: _validateEmail,
+                        prefixIcon: const Icon(Icons.email_outlined),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      CustomTextField(
+                        controller: passwordController,
+                        hintText: "Your Unique Password",
+                        focusNode: _passwordFocus,
+                        validator: _validatePassword,
+                        prefixIcon: const Icon(Icons.lock_outlined),
+                        obscureText: !_isPasswordVisible,
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
+                          icon: Icon(
+                            _isPasswordVisible
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      /// Login Button
+                      CustomButton(
+                        onPressed: handleSignIn,
+                        text: 'Login',
+                        child: state.status == AuthStatus.loading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                "Login",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// Sign up text
+                      Center(
+                        child: RichText(
+                          text: TextSpan(
+                            text: "Don't have an account? ",
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyLarge?.copyWith(color: Colors.grey),
+                            children: [
+                              TextSpan(
+                                text: "Sign up",
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      color: Theme.of(context).primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    getIt<AppRouter>().push(
+                                      const SignupScreen(),
+                                    );
+                                  },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
