@@ -1,6 +1,5 @@
 import 'package:chat_app/core/common/custom_button.dart';
 import 'package:chat_app/core/common/custom_text_field.dart';
-import 'package:chat_app/data/repositories/auth_repository.dart';
 import 'package:chat_app/logic/cubits/auth/auth_cubit.dart';
 import 'package:chat_app/logic/cubits/auth/auth_state.dart';
 import 'package:flutter/material.dart';
